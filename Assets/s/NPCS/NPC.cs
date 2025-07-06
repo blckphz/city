@@ -1,16 +1,15 @@
 using UnityEngine;
 
-public class NPC : MonoBehaviour
+[CreateAssetMenu(fileName = "New NPC", menuName = "NPC/BaseNPC")]
+public class NPC : ScriptableObject
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+    public string npcName;
+    public int health;
+    public float moveSpeed;
 
-    // Update is called once per frame
-    void Update()
+    public virtual void Act()
     {
-        
+        // Base behavior
+        Debug.Log($"{npcName} is acting.");
     }
 }

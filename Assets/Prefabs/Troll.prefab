@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 627177247499580411}
   - component: {fileID: 5243139756609776962}
   - component: {fileID: 5968090279366632884}
+  - component: {fileID: 6323150306223448726}
   m_Layer: 0
   m_Name: Troll
   m_TagString: Troop
@@ -215,3 +216,15 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &6323150306223448726
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4159619561850658893}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b939f4f199e6424bbf8e0e9a6a7aa70, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
