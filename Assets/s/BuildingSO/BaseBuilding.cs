@@ -1,9 +1,11 @@
 using UnityEngine;
 
-
-public class BaseBuilding : ScriptableObject
+public abstract class BaseBuilding : ScriptableObject
 {
     public string buildingName;
     public int capacity;
-    public Sprite icon; // Example field
+    public Sprite icon;
+
+    // Abstract method to produce resources based on workers count
+    public abstract void ProduceResources(int workersCount);
 }

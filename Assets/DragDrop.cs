@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
-using static trollbrain;
 
 public class DragDrop : MonoBehaviour, IPointerClickHandler
 {
@@ -70,7 +69,6 @@ public class DragDrop : MonoBehaviour, IPointerClickHandler
         }
         else
         {
-            // planned and placed are green transparent
             SetColor(greenTransparent);
         }
     }
@@ -93,8 +91,11 @@ public class DragDrop : MonoBehaviour, IPointerClickHandler
             {
                 if (buildLogic != null)
                 {
-                    buildLogic.PlaceBuilding();
-                    Debug.Log($"Building preview placed at {transform.position}");
+                    bool placed = buildLogic.PlaceBuilding();
+                    if (placed)
+                        Debug.Log($"Building preview placed at {transform.position}");
+                    else
+                        Debug.LogWarning("Failed to place building.");
                 }
                 else
                 {
@@ -105,10 +106,9 @@ public class DragDrop : MonoBehaviour, IPointerClickHandler
             {
                 AssignTrollToJob();
 
-                // ✅ New line: Send selected troops to this building
+                // Send selected troops to this building (if you have SelectBox)
                 SelectBox.Instance.SendSelectedToBuilding(gameObject);
             }
-
         }
     }
 
@@ -120,11 +120,8 @@ public class DragDrop : MonoBehaviour, IPointerClickHandler
         {
             if (troll.isWorkingAt == null)
             {
-                // Assign troll to this building
                 troll.AssignAsWorker(gameObject);
                 troll.GoToBuilding(gameObject);
-
-                // Make troll child of the built building GameObject
                 troll.transform.SetParent(gameObject.transform);
 
                 Debug.Log($"{troll.gameObject.name} assigned to work at {gameObject.name}");

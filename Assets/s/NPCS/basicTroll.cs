@@ -1,22 +1,7 @@
 using UnityEngine;
 
-public class basicTroll : MonoBehaviour
+[CreateAssetMenu(fileName = "New NPC", menuName = "NPC/BaseNPC")]
+public class basicTroll : NPC
 {
-    public NPC trollData;
 
-    void Start()
-    {
-        if (trollData != null)
-        {
-            Debug.Log($"Spawned: {trollData.npcName}");
-        }
-    }
-
-    void Update()
-    {
-        if (trollData != null)
-        {
-            trollData.Act(); // Call ScriptableObject logic
-        }
-    }
 }

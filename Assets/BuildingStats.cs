@@ -11,6 +11,8 @@ public class BuildingStats : MonoBehaviour
 
     private SpriteRenderer spriteRenderer;
 
+    public BaseBuilding building;
+
     void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();

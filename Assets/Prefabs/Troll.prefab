@@ -228,3 +228,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b939f4f199e6424bbf8e0e9a6a7aa70, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentHealth: 0
+  currentWalkspeed: 0
+  thisNpc: {fileID: 11400000, guid: 472d42721f2bd72428e2a27491586cf2, type: 2}

@@ -184,11 +184,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 33e6d4ed06165074888937ff61a566df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentBuildState: 0
   currentlyWorkingHere: []
   building: {fileID: 11400000, guid: 81586ce22e381b04290f5587769c74b3, type: 2}
-  currentGrain: 0
-  isPlaced: 0
-  currentBuildState: 0
 --- !u!114 &2056405442185931892
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -213,6 +211,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b68f76a55f5d7854d8998f692915bfdd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  buildLogic: {fileID: 0}
 --- !u!50 &2355958189222893466
 Rigidbody2D:
   serializedVersion: 5
