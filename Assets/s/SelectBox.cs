@@ -22,32 +22,76 @@ public class SelectBox : MonoBehaviour
     /// <summary>
     /// Called from BuildingClickTarget when a building is clicked.
     /// Sends all selected units to the building to start working or constructing.
+    /// Removes units from previous building if working elsewhere.
+    /// Deselects units after assigning jobs.
     /// </summary>
     public void SendSelectedToBuilding(GameObject building)
     {
         Debug.Log($"Sending {selectedUnits.Count} selected units to building {building.name}");
+
+        List<GameObject> unitsToDeselect = new List<GameObject>();
+
+        BuildingStats targetBuildingStats = building.GetComponent<BuildingStats>();
+        if (targetBuildingStats == null)
+        {
+            Debug.LogWarning("Target building missing BuildingStats component!");
+            return;
+        }
+
         foreach (GameObject unit in selectedUnits)
         {
             trollbrain brain = unit.GetComponent<trollbrain>();
-            BuildingStats buildingStats = building.GetComponent<BuildingStats>();
-
-            if (brain != null && buildingStats != null)
+            if (brain == null)
             {
-                if (buildingStats.currentBuildState == BuildingStats.BuildState.planned)
-                {
-                    // If building is not yet built, send units to construct it
-                    brain.GoToBuilding(building);
-                }
-                else if (buildingStats.currentBuildState == BuildingStats.BuildState.Built)
-                {
-                    // If building is built, assign units as workers
-                    brain.AssignAsWorker(building);
+                Debug.LogWarning($"{unit.name} missing trollbrain component!");
+                continue;
+            }
 
-                    if (!buildingStats.currentlyWorkingHere.Contains(unit))
-                        buildingStats.currentlyWorkingHere.Add(unit);
+            // Check if the unit is currently working at another building and remove it properly
+            BuildingStats currentBuilding = null;
+            foreach (var b in FindObjectsOfType<BuildingStats>())
+            {
+                if (b.currentlyWorkingHere.Contains(unit))
+                {
+                    currentBuilding = b;
+                    break;
                 }
             }
+            if (currentBuilding != null && currentBuilding != targetBuildingStats)
+            {
+                currentBuilding.RemoveWorker(unit);  // Properly remove worker
+                brain.ClearWorkingAt();              // Clear busy state so troop can be reassigned
+                Debug.Log($"{unit.name} removed from previous building {currentBuilding.gameObject.name}");
+            }
+
+            // Assign unit to new building depending on its state
+            if (targetBuildingStats.currentBuildState == BuildingStats.BuildState.planned)
+            {
+                // Building not built yet — send unit to construct it
+                brain.GoToBuilding(building);
+                unitsToDeselect.Add(unit);
+            }
+            else if (targetBuildingStats.currentBuildState == BuildingStats.BuildState.Built)
+            {
+                // Building built — assign as worker
+                brain.AssignAsWorker(building);
+
+                if (!targetBuildingStats.currentlyWorkingHere.Contains(unit))
+                    targetBuildingStats.currentlyWorkingHere.Add(unit);
+
+                unitsToDeselect.Add(unit);
+            }
         }
+
+        // Remove assigned units from selection
+        foreach (GameObject unit in unitsToDeselect)
+        {
+            selectedUnits.Remove(unit);
+        }
+
+        // Update selection indicator visibility
+        if (selectionIndicator != null)
+            selectionIndicator.SetActive(selectedUnits.Count > 0);
     }
 
     void Start()

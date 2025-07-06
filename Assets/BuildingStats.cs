@@ -3,70 +3,65 @@ using UnityEngine;
 
 public class BuildingStats : MonoBehaviour
 {
-    public List<GameObject> currentlyWorkingHere = new List<GameObject>();
-    public BaseBuilding building;
-
-    private float productionTimer = 0f;
-    public int currentGrain = 0;
-
-    public bool isPlaced => currentBuildState == BuildState.Built;
-
-    public enum BuildState
-    {
-        planned,
-        Placed,
-        Built
-    }
+    public enum BuildState { planned, placed, Built, Destroyed }
 
     public BuildState currentBuildState = BuildState.planned;
 
-    public void SetBuildState(BuildState newState)
+    public List<GameObject> currentlyWorkingHere = new List<GameObject>();
+
+    private SpriteRenderer spriteRenderer;
+
+    void Awake()
     {
-        currentBuildState = newState;
-        Debug.Log($"Building '{gameObject.name}' state changed to {currentBuildState}");
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer == null)
+            Debug.LogWarning("BuildingStats requires a SpriteRenderer.");
     }
 
-    public void AddWorker(GameObject worker)
+    public void SetBuildState(BuildState state)
     {
-        if (!currentlyWorkingHere.Contains(worker))
+        currentBuildState = state;
+
+        switch (state)
         {
-            currentlyWorkingHere.Add(worker);
-            worker.transform.SetParent(transform); // Make worker a child immediately when added
-            Debug.Log($"{worker.name} added to {gameObject.name}. Total workers: {currentlyWorkingHere.Count}");
-        }
-        else
-        {
-            Debug.Log($"{worker.name} is already working at {gameObject.name}");
+            case BuildState.planned:
+                if (spriteRenderer != null)
+                    spriteRenderer.color = new Color(1f, 1f, 1f, 0.4f); // semi-transparent
+                break;
+            case BuildState.placed:
+                if (spriteRenderer != null)
+                    spriteRenderer.color = Color.green;  // green for placed but not built
+                break;
+            case BuildState.Built:
+                if (spriteRenderer != null)
+                    spriteRenderer.color = Color.white;
+                break;
+            case BuildState.Destroyed:
+                // add destroy logic here
+                break;
         }
     }
 
-    // Call this to ensure all workers in the list are children of this building
-    public void FixWorkersParent()
+
+    public void RemoveWorker(GameObject unit)
     {
-        foreach (var worker in currentlyWorkingHere)
+        if (currentlyWorkingHere.Contains(unit))
         {
-            if (worker != null && worker.transform.parent != transform)
+            currentlyWorkingHere.Remove(unit);
+
+            // Unparent the troll from this building
+            if (unit.transform.parent == transform)
+                unit.transform.SetParent(null);
+
+            // Clear troll's working assignment
+            trollbrain troll = unit.GetComponent<trollbrain>();
+            if (troll != null && troll.isWorkingAt == gameObject)
             {
-                worker.transform.SetParent(transform);
-                Debug.Log($"{worker.name} is now a child of {gameObject.name}");
+                troll.ClearWorkingAt();
             }
+
+            Debug.Log($"{unit.name} was removed from {gameObject.name} and unparented.");
         }
     }
 
-    void Update()
-    {
-        // Optional: Handle production if this is a mill and is built
-        /*
-        if (building.buildingType == BuildingType.Mill && currentBuildState == BuildState.Built)
-        {
-            productionTimer += Time.deltaTime;
-            if (productionTimer >= 5f)
-            {
-                currentGrain++;
-                productionTimer = 0f;
-                Debug.Log($"Produced grain. Total: {currentGrain}");
-            }
-        }
-        */
-    }
 }

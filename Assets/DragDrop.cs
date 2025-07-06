@@ -93,7 +93,7 @@ public class DragDrop : MonoBehaviour, IPointerClickHandler
             {
                 if (buildLogic != null)
                 {
-                    buildLogic.ConfirmPlacement(this.gameObject);
+                    buildLogic.PlaceBuilding();
                     Debug.Log($"Building preview placed at {transform.position}");
                 }
                 else

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class BuildLogic : MonoBehaviour
 {
@@ -7,6 +7,7 @@ public class BuildLogic : MonoBehaviour
 
     private GameObject previewInstance;
     private bool isBuilding = false;
+    private bool isPlaced = false;         // NEW: track if building is placed (frozen)
 
     private Camera mainCamera;
     private float zPos = 0f;
@@ -22,12 +23,20 @@ public class BuildLogic : MonoBehaviour
 
     void Update()
     {
-        if (isBuilding && previewInstance != null)
+        // Only move preview if building is active and not yet placed
+        if (isBuilding && previewInstance != null && !isPlaced)
         {
             MovePreviewWithMouse();
-            // No color updates here, handled elsewhere
+
+            // Cancel placement on right mouse click
+            if (Input.GetMouseButtonDown(1)) // Right mouse button
+            {
+                Debug.Log("Cancelled building placement.");
+                CancelBuilding();
+            }
         }
     }
+
 
     public void StartNewBuilding(GameObject prefab)
     {
@@ -58,6 +67,7 @@ public class BuildLogic : MonoBehaviour
         stats.SetBuildState(BuildingStats.BuildState.planned);
 
         isBuilding = true;
+        isPlaced = false;
     }
 
     void MovePreviewWithMouse()
@@ -83,35 +93,65 @@ public class BuildLogic : MonoBehaviour
         return overlap != null;
     }
 
-    public void ConfirmPlacement(GameObject building)
+    // Call this when player confirms the placement of the building (e.g. presses "place" button or clicks)
+    public bool PlaceBuilding()
     {
         if (!isBuilding || previewInstance == null)
-            return;
+            return false;
 
         if (CheckOverlap())
         {
             Debug.Log("Cannot place building here - overlapping!");
-            return;
+            return false;
         }
 
-        var stats = previewInstance.GetComponent<BuildingStats>();
+        BuildingStats stats = previewInstance.GetComponent<BuildingStats>();
         if (stats != null)
-            stats.SetBuildState(BuildingStats.BuildState.Placed);
+        {
+            stats.SetBuildState(BuildingStats.BuildState.placed);
+        }
 
-        isBuilding = false;  // stop moving preview
+        isPlaced = true;
+        isBuilding = false; // ✅ FIX: Reset this after placement!
 
-        Debug.Log("Building placed but awaiting construction!");
+        Debug.Log("Building placed, now waiting for workers to build it.");
+
+        return true;
     }
 
+
+    // Call this to cancel building placement and remove preview
+    public void CancelBuilding()
+    {
+        if (previewInstance != null)
+        {
+            Destroy(previewInstance);
+            previewInstance = null;
+        }
+
+        isBuilding = false;
+        isPlaced = false;
+    }
+
+    // Call this to mark a building as finished by workers
     public void FinishBuilding(GameObject building)
     {
-        if (building == null)
+        BuildingStats stats = building.GetComponent<BuildingStats>();
+        if (stats == null)
             return;
 
-        BuildingStats stats = building.GetComponent<BuildingStats>();
-        if (stats != null)
-            stats.SetBuildState(BuildingStats.BuildState.Built);
+        stats.SetBuildState(BuildingStats.BuildState.Built);
 
-        Debug.Log("Building construction completed!");
+        // Optionally do any other logic here after building is done
+        Debug.Log($"{building.name} construction finished!");
     }
+
+    // Optional: returns if currently building (preview active)
+    public bool IsBuilding() => isBuilding;
+
+    // Optional: returns if building is placed (frozen in world)
+    public bool IsPlaced() => isPlaced;
+
+    // Optional: returns reference to current preview instance
+    public GameObject GetPreviewInstance() => previewInstance;
 }

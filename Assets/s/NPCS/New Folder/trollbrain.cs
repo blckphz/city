@@ -39,8 +39,7 @@ public class trollbrain : MonoBehaviour
                     buildLogic.FinishBuilding(currentBuildingStats.gameObject);
                 }
 
-                // Construction is finished, but DO NOT assign as worker or set parent here.
-                // Simply clear the current task.
+                // Construction is finished, clear working state
                 ClearWorkingAt();
 
                 currentTarget = null;
@@ -48,7 +47,6 @@ public class trollbrain : MonoBehaviour
             }
         }
     }
-
 
     // Returns true if the troll is currently working somewhere
     public bool IsBusy()
@@ -107,23 +105,23 @@ public class trollbrain : MonoBehaviour
         destinationSetter.target = currentTarget;
         aiPath.canMove = true;
 
-        // ✅ Parent the troll under the building in the hierarchy
+        // Parent the troll under the building in the hierarchy
         transform.SetParent(building.transform);
     }
-
 
     private void UnregisterFromBuilding()
     {
         if (currentBuildingStats != null && currentBuildingStats.currentlyWorkingHere.Contains(gameObject))
         {
-            currentBuildingStats.currentlyWorkingHere.Remove(gameObject);
+            currentBuildingStats.RemoveWorker(gameObject);
             transform.SetParent(null);
         }
 
         ClearWorkingAt();
     }
 
-    private void ClearWorkingAt()
+    // Make this public so external scripts can clear busy state on reassignment
+    public void ClearWorkingAt()
     {
         isWorkingAt = null;
     }
