@@ -52,6 +52,7 @@ public class PopulationStats : MonoBehaviour
             GameObject building = brain.isWorkingAt;
             BuildingStats buildingStats = building.GetComponent<BuildingStats>();
             BaseBuilding baseBuilding = building.GetComponent<BaseBuilding>();
+            Debug.Log(baseBuilding);
 
             if (buildingStats != null &&
                 buildingStats.currentBuildState == BuildingStats.BuildState.placed) // ✅ only count as builder if it's placed

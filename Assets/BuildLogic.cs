@@ -2,12 +2,12 @@
 
 public class BuildLogic : MonoBehaviour
 {
-    public GameObject buildingPrefab;      // Assign prefab in inspector
+    public GameObject buildingPrefab; // Assign prefab in inspector
     public LayerMask blockingLayers;
 
     private GameObject previewInstance;
     private bool isBuilding = false;
-    private bool isPlaced = false;         // NEW: track if building is placed (frozen)
+    private bool isPlaced = false;
 
     private Camera mainCamera;
     private float zPos = 0f;
@@ -23,25 +23,24 @@ public class BuildLogic : MonoBehaviour
 
     void Update()
     {
-    if (isBuilding && previewInstance != null && !isPlaced)
-{
-    MovePreviewWithMouse();
+        if (isBuilding && previewInstance != null && !isPlaced)
+        {
+            MovePreviewWithMouse();
 
-    if (Input.GetMouseButtonDown(1)) // Right click
-    {
-        Debug.Log("Cancelled building placement.");
-        CancelBuilding();
-    }
+            if (Input.GetMouseButtonDown(1)) // Right click
+            {
+                Debug.Log("Cancelled building placement.");
+                CancelBuilding();
+            }
 
-    if (Input.GetMouseButtonDown(0)) // Left click
-    {
-        bool placed = PlaceBuilding();
-        if (placed)
-            Debug.Log("Building successfully placed.");
+            if (Input.GetMouseButtonDown(0)) // Left click
+            {
+                bool placed = PlaceBuilding();
+                if (placed)
+                    Debug.Log("Building successfully placed.");
+            }
+        }
     }
-}
-    }
-
 
     public void StartNewBuilding(GameObject prefab)
     {
@@ -98,7 +97,6 @@ public class BuildLogic : MonoBehaviour
         return overlap != null;
     }
 
-    // Call this when player confirms the placement of the building (e.g. presses "place" button or clicks)
     public bool PlaceBuilding()
     {
         if (!isBuilding || previewInstance == null)
@@ -116,23 +114,21 @@ public class BuildLogic : MonoBehaviour
             stats.SetBuildState(BuildingStats.BuildState.placed);
         }
 
-        // Let PopulationStats know a new building is ready
+        // Inform population tracker
         PopulationStats pop = FindObjectOfType<PopulationStats>();
         if (pop != null)
         {
-            pop.RefreshTrollList(); // ensures stats are up to date
+            pop.RefreshTrollList();
         }
 
         isPlaced = true;
-        isBuilding = false; // ✅ FIX: Reset this after placement!
+        isBuilding = false;
 
-        Debug.Log("Building placed, now waiting for workers to build it.");
+        Debug.Log("Building placed, waiting for workers to build it.");
 
         return true;
     }
 
-
-    // Call this to cancel building placement and remove preview
     public void CancelBuilding()
     {
         if (previewInstance != null)
@@ -145,25 +141,23 @@ public class BuildLogic : MonoBehaviour
         isPlaced = false;
     }
 
-    // Call this to mark a building as finished by workers
+    // Called by worker trolls when building completes
     public void FinishBuilding(GameObject building)
     {
+        if (building == null) return;
+
         BuildingStats stats = building.GetComponent<BuildingStats>();
         if (stats == null)
+        {
+            Debug.LogWarning("Tried to finish building without BuildingStats!");
             return;
+        }
 
         stats.SetBuildState(BuildingStats.BuildState.Built);
-
-        // Optionally do any other logic here after building is done
         Debug.Log($"{building.name} construction finished!");
     }
 
-    // Optional: returns if currently building (preview active)
     public bool IsBuilding() => isBuilding;
-
-    // Optional: returns if building is placed (frozen in world)
     public bool IsPlaced() => isPlaced;
-
-    // Optional: returns reference to current preview instance
     public GameObject GetPreviewInstance() => previewInstance;
 }

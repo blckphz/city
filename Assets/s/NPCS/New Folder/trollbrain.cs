@@ -1,138 +1,158 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using Pathfinding;
 
+[RequireComponent(typeof(AIPath), typeof(AIDestinationSetter))]
 public class trollbrain : MonoBehaviour
 {
-    private AIDestinationSetter destinationSetter;
+    public GameObject isWorkingAt = null;
+
     private AIPath aiPath;
+    private AIDestinationSetter destinationSetter;
+    private Coroutine currentAction;
 
-    private BuildingStats currentBuildingStats;
-    private Transform currentTarget;
+    // Distance at which troll is considered "arrived" at building
+    public float arriveDistance = 0.5f;
 
-    // The building the troll is currently working at (null if none)
-    public GameObject isWorkingAt { get; private set; }
-
-    void Start()
+    void Awake()
     {
-        destinationSetter = GetComponent<AIDestinationSetter>();
         aiPath = GetComponent<AIPath>();
+        destinationSetter = GetComponent<AIDestinationSetter>();
     }
 
-    void Update()
+    // Call this to assign troll to build a planned building
+    public void GoToBuilding(GameObject targetBuilding)
     {
-        // If assigned to a building but no current target or target changed, reset target to assigned building
-        if (isWorkingAt != null && (currentTarget == null || currentTarget.gameObject != isWorkingAt))
-        {
-            currentTarget = isWorkingAt.transform;
-            destinationSetter.target = currentTarget;
-            aiPath.canMove = true;
-        }
+        // Clear any previous work assignment first
+        if (isWorkingAt != null)
+            ClearWorkingAt();
 
-        if (currentTarget != null)
-        {
-            float distance = Vector3.Distance(transform.position, currentTarget.position);
-            if (distance < 1f && currentBuildingStats != null)
-            {
-                BuildLogic buildLogic = FindObjectOfType<BuildLogic>();
-                if (buildLogic != null)
-                {
-                    buildLogic.FinishBuilding(currentBuildingStats.gameObject);
-                }
+        isWorkingAt = targetBuilding;
 
-                // Construction is finished, clear working state
-                ClearWorkingAt();
+        // Stop any ongoing action coroutine
+        if (currentAction != null)
+            StopCoroutine(currentAction);
 
-                currentTarget = null;
-                currentBuildingStats = null;
-            }
-        }
+        aiPath.canMove = true;   // Enable movement
+
+        currentAction = StartCoroutine(GoAndBuildRoutine(targetBuilding));
     }
 
-    // Returns true if the troll is currently working somewhere
     public bool IsBusy()
     {
-        return isWorkingAt != null;
+        // Busy if assigned to a building and/or running an action coroutine
+        return isWorkingAt != null || currentAction != null;
     }
 
-    public void GoToBuilding(GameObject building)
+
+    // Coroutine that moves to building and simulates building over time
+    private IEnumerator GoAndBuildRoutine(GameObject targetBuilding)
     {
-        // Prevent going to build if already working somewhere
-        if (IsBusy())
+        if (targetBuilding == null)
+            yield break;
+
+        Transform buildingTransform = targetBuilding.transform;
+
+        // Set target to move toward
+        destinationSetter.target = buildingTransform;
+
+        // Wait until within arriveDistance
+        while (Vector3.Distance(transform.position, buildingTransform.position) > arriveDistance)
         {
-            Debug.Log($"{gameObject.name} is already working at {isWorkingAt.name} and cannot start building another.");
-            return;
+            yield return null;
         }
 
-        UnregisterFromBuilding();
-
-        currentBuildingStats = building.GetComponent<BuildingStats>();
-        if (currentBuildingStats == null)
-        {
-            Debug.LogWarning("GoToBuilding called with object that has no BuildingStats!");
-            return;
-        }
-
-        currentTarget = building.transform;
-        destinationSetter.target = currentTarget;
-        aiPath.canMove = true;
-
-        // Assign working status here
-        isWorkingAt = building;
-    }
-
-    public void MoveToPosition(Vector3 position)
-    {
-        UnregisterFromBuilding();
-
-        currentBuildingStats = null;
-        currentTarget = null;
-
+        // Arrived - stop moving
         destinationSetter.target = null;
-        aiPath.destination = position;
-        aiPath.canMove = true;
+        aiPath.canMove = false;
 
-        // Clear working status when moving somewhere else
-        ClearWorkingAt();
+        Debug.Log($"{gameObject.name} arrived at {targetBuilding.name} and starts building.");
+
+        // Get BuildingStats to know build time
+        BuildingStats buildingStats = targetBuilding.GetComponent<BuildingStats>();
+        if (buildingStats == null)
+        {
+            Debug.LogWarning("Target building missing BuildingStats component.");
+            yield break;
+        }
+
+        if (buildingStats.building == null)
+        {
+            Debug.LogWarning("BuildingStats missing BaseBuilding reference.");
+            yield break;
+        }
+
+        int buildTime = buildingStats.building.buildTime;
+
+        // Simulate building progress (simple wait for buildTime seconds)
+        float timer = 0f;
+        while (timer < buildTime)
+        {
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        // Finish building
+        buildingStats.SetBuildState(BuildingStats.BuildState.Built);
+
+        Debug.Log($"{gameObject.name} finished building {targetBuilding.name}!");
+
+        // Optionally, troll can now be assigned as a worker
+        AssignAsWorker(targetBuilding);
+
+        // Clear currentAction coroutine handle
+        currentAction = null;
     }
 
+    // Assign troll as a worker to a finished building
     public void AssignAsWorker(GameObject building)
     {
-        Debug.Log($"{gameObject.name} assigned to work at {building.name}");
+        if (isWorkingAt != null && isWorkingAt != building)
+            ClearWorkingAt();
 
         isWorkingAt = building;
 
-        currentTarget = building.transform;
-        destinationSetter.target = currentTarget;
-        aiPath.canMove = true;
-
-        // Parent the troll under the building in the hierarchy
-        transform.SetParent(building.transform);
-    }
-
-    private void UnregisterFromBuilding()
-    {
-        if (currentBuildingStats != null && currentBuildingStats.currentlyWorkingHere.Contains(gameObject))
+        // Add self to building's worker list if not already added
+        BuildingStats buildingStats = building.GetComponent<BuildingStats>();
+        if (buildingStats != null && !buildingStats.currentlyWorkingHere.Contains(gameObject))
         {
-            currentBuildingStats.RemoveWorker(gameObject);
-            transform.SetParent(null);
+            buildingStats.currentlyWorkingHere.Add(gameObject);
         }
 
-        ClearWorkingAt();
+        // TODO: Implement worker behavior like resource gathering, production, etc.
+        Debug.Log($"{gameObject.name} assigned as worker at {building.name}.");
+
+        // Optionally enable some idle or working animation here
     }
 
-    // Make this public so external scripts can clear busy state on reassignment
+    // Clear the working assignment, remove from building's worker list, and stop movement
     public void ClearWorkingAt()
     {
+        if (isWorkingAt == null)
+            return;
+
+        BuildingStats buildingStats = isWorkingAt.GetComponent<BuildingStats>();
+        if (buildingStats != null)
+        {
+            buildingStats.RemoveWorker(gameObject);
+        }
+
         isWorkingAt = null;
-    }
 
-    // Static helper to check if a troll is busy
-    public static bool IsTrollWorking(GameObject troll)
-    {
-        trollbrain brain = troll.GetComponent<trollbrain>();
-        if (brain == null)
-            return false;
+        // Stop movement and clear target
+        if (destinationSetter != null)
+            destinationSetter.target = null;
 
-        return brain.IsBusy();
+        if (aiPath != null)
+            aiPath.canMove = false;
+
+        // Stop any ongoing build coroutine
+        if (currentAction != null)
+        {
+            StopCoroutine(currentAction);
+            currentAction = null;
+        }
+
+        Debug.Log($"{gameObject.name} cleared working assignment.");
     }
 }

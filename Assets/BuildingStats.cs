@@ -9,26 +9,34 @@ public class BuildingStats : MonoBehaviour
 
     public List<GameObject> currentlyWorkingHere = new List<GameObject>();
 
-    private SpriteRenderer spriteRenderer;
+    public SpriteRenderer spriteRenderer;
 
     public BaseBuilding building;
 
     void Awake()
     {
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        //spriteRenderer = GetComponent<SpriteRenderer>();
         if (spriteRenderer == null)
             Debug.LogWarning("BuildingStats requires a SpriteRenderer.");
     }
 
     public void SetBuildState(BuildState state)
     {
+
+
         currentBuildState = state;
 
         switch (state)
         {
+
+            
+
             case BuildState.planned:
                 if (spriteRenderer != null)
+                {
+                    Debug.Log("planned");
                     spriteRenderer.color = new Color(1f, 1f, 1f, 0.4f); // semi-transparent
+                }
                 break;
             case BuildState.placed:
                 if (spriteRenderer != null)
