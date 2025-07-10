@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class PopulationStats : MonoBehaviour
@@ -20,6 +20,7 @@ public class PopulationStats : MonoBehaviour
     void Update()
     {
         UpdatePopulationStats();
+        AutoAssignBuilders(); // ✅ Continually try to assign builders
     }
 
     public void RefreshTrollList()
@@ -52,10 +53,8 @@ public class PopulationStats : MonoBehaviour
             BuildingStats buildingStats = building.GetComponent<BuildingStats>();
             BaseBuilding baseBuilding = building.GetComponent<BaseBuilding>();
 
-            // Check if it's still under construction
             if (buildingStats != null &&
-                (buildingStats.currentBuildState == BuildingStats.BuildState.planned ||
-                 buildingStats.currentBuildState == BuildingStats.BuildState.placed))
+                buildingStats.currentBuildState == BuildingStats.BuildState.placed) // ✅ only count as builder if it's placed
             {
                 builders++;
             }
@@ -63,14 +62,55 @@ public class PopulationStats : MonoBehaviour
             {
                 farmers++;
             }
-            else
+        }
+    }
+
+    // ✅ Auto assign idle trolls to any "placed" building
+    private void AutoAssignBuilders()
+    {
+        List<GameObject> availableTrolls = new List<GameObject>();
+        List<GameObject> buildingsNeedingWork = new List<GameObject>();
+
+        // 1. Get available trolls
+        foreach (GameObject troll in allTrolls)
+        {
+            trollbrain brain = troll.GetComponent<trollbrain>();
+            if (brain != null && !brain.IsBusy())
             {
-                // Could add logic for other job types here
+                availableTrolls.Add(troll);
+            }
+        }
+
+        // 2. Get buildings in "placed" state (not yet built)
+        BuildingStats[] allBuildings = FindObjectsOfType<BuildingStats>();
+        foreach (BuildingStats building in allBuildings)
+        {
+            if (building.currentBuildState == BuildingStats.BuildState.placed &&
+                building.currentlyWorkingHere.Count < 1) // you can increase this to allow multiple builders
+            {
+                buildingsNeedingWork.Add(building.gameObject);
+            }
+        }
+
+        // 3. Assign trolls to buildings
+        foreach (GameObject building in buildingsNeedingWork)
+        {
+            if (availableTrolls.Count == 0)
+                break;
+
+            GameObject troll = availableTrolls[0];
+            availableTrolls.RemoveAt(0);
+
+            trollbrain brain = troll.GetComponent<trollbrain>();
+            if (brain != null)
+            {
+                brain.GoToBuilding(building);
+                Debug.Log($"{troll.name} automatically assigned to build {building.name}");
             }
         }
     }
 
-    // Optional: Getters for external use
+    // External Getters
     public int GetUnemployedCount() => unemployed;
     public int GetFarmerCount() => farmers;
     public int GetBuilderCount() => builders;

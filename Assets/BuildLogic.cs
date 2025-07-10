@@ -23,18 +23,23 @@ public class BuildLogic : MonoBehaviour
 
     void Update()
     {
-        // Only move preview if building is active and not yet placed
-        if (isBuilding && previewInstance != null && !isPlaced)
-        {
-            MovePreviewWithMouse();
+    if (isBuilding && previewInstance != null && !isPlaced)
+{
+    MovePreviewWithMouse();
 
-            // Cancel placement on right mouse click
-            if (Input.GetMouseButtonDown(1)) // Right mouse button
-            {
-                Debug.Log("Cancelled building placement.");
-                CancelBuilding();
-            }
-        }
+    if (Input.GetMouseButtonDown(1)) // Right click
+    {
+        Debug.Log("Cancelled building placement.");
+        CancelBuilding();
+    }
+
+    if (Input.GetMouseButtonDown(0)) // Left click
+    {
+        bool placed = PlaceBuilding();
+        if (placed)
+            Debug.Log("Building successfully placed.");
+    }
+}
     }
 
 
@@ -109,6 +114,13 @@ public class BuildLogic : MonoBehaviour
         if (stats != null)
         {
             stats.SetBuildState(BuildingStats.BuildState.placed);
+        }
+
+        // Let PopulationStats know a new building is ready
+        PopulationStats pop = FindObjectOfType<PopulationStats>();
+        if (pop != null)
+        {
+            pop.RefreshTrollList(); // ensures stats are up to date
         }
 
         isPlaced = true;

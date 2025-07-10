@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class DragDrop : MonoBehaviour, IPointerClickHandler
+public class DragDrop : MonoBehaviour
 {
     private Camera mainCamera;
     private float zPos;
@@ -83,6 +83,8 @@ public class DragDrop : MonoBehaviour, IPointerClickHandler
         }
     }
 
+    /*
+
     public void OnPointerClick(PointerEventData eventData)
     {
         if (buildingStats != null)
@@ -111,6 +113,9 @@ public class DragDrop : MonoBehaviour, IPointerClickHandler
             }
         }
     }
+
+
+    */
 
     private void AssignTrollToJob()
     {
