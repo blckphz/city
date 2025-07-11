@@ -13,6 +13,7 @@ public class BuildLogic : MonoBehaviour
     private float zPos = 0f;
 
     private BoxCollider2D previewCollider;
+    private BuildingStats previewStats;
 
     void Start()
     {
@@ -60,15 +61,18 @@ public class BuildLogic : MonoBehaviour
         previewInstance.transform.position = Vector3.zero;
         previewInstance.transform.rotation = Quaternion.identity;
 
-        previewCollider = previewInstance.GetComponent<BoxCollider2D>();
+        previewCollider = previewInstance.GetComponentInChildren<BoxCollider2D>();
         if (previewCollider == null)
             Debug.LogWarning("Building prefab missing BoxCollider2D!");
 
-        var stats = previewInstance.GetComponent<BuildingStats>();
-        if (stats == null)
-            stats = previewInstance.AddComponent<BuildingStats>();
+        previewStats = previewInstance.GetComponentInChildren<BuildingStats>();
+        if (previewStats == null)
+            Debug.LogWarning("Building prefab missing BuildingStats!");
 
-        stats.SetBuildState(BuildingStats.BuildState.planned);
+        if (previewStats != null)
+        {
+            previewStats.SetBuildState(BuildingStats.BuildState.planned);
+        }
 
         isBuilding = true;
         isPlaced = false;
@@ -91,7 +95,7 @@ public class BuildLogic : MonoBehaviour
             return false;
 
         Vector2 size = Vector2.Scale(previewCollider.size, previewInstance.transform.lossyScale);
-        Vector2 pos = previewInstance.transform.position;
+        Vector2 pos = previewCollider.transform.position; // Use collider's own position
 
         Collider2D overlap = Physics2D.OverlapBox(pos, size, 0f, blockingLayers);
         return overlap != null;
@@ -108,13 +112,11 @@ public class BuildLogic : MonoBehaviour
             return false;
         }
 
-        BuildingStats stats = previewInstance.GetComponent<BuildingStats>();
-        if (stats != null)
+        if (previewStats != null)
         {
-            stats.SetBuildState(BuildingStats.BuildState.placed);
+            previewStats.SetBuildState(BuildingStats.BuildState.placed);
         }
 
-        // Inform population tracker
         PopulationStats pop = FindObjectOfType<PopulationStats>();
         if (pop != null)
         {
@@ -141,12 +143,11 @@ public class BuildLogic : MonoBehaviour
         isPlaced = false;
     }
 
-    // Called by worker trolls when building completes
     public void FinishBuilding(GameObject building)
     {
         if (building == null) return;
 
-        BuildingStats stats = building.GetComponent<BuildingStats>();
+        BuildingStats stats = building.GetComponentInChildren<BuildingStats>();
         if (stats == null)
         {
             Debug.LogWarning("Tried to finish building without BuildingStats!");
