@@ -1,57 +1,93 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class BuildingStats : MonoBehaviour
 {
     public enum BuildState { planned, placed, Built, Destroyed }
 
     public BuildState currentBuildState = BuildState.planned;
-
     public List<GameObject> currentlyWorkingHere = new List<GameObject>();
 
+    [Header("Optional: assign manually or auto-detect")]
     public SpriteRenderer spriteRenderer;
+    public TilemapRenderer tilemapRenderer;
+    private Tilemap tilemap; // Needed for tinting
 
     public BaseBuilding building;
 
     void Awake()
     {
-        //spriteRenderer = GetComponent<SpriteRenderer>();
+        // Auto-find SpriteRenderer
         if (spriteRenderer == null)
-            Debug.LogWarning("BuildingStats requires a SpriteRenderer.");
+            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+
+        // Auto-find TilemapRenderer and Tilemap
+        if (tilemapRenderer == null)
+            tilemapRenderer = GetComponentInChildren<TilemapRenderer>();
+
+        if (tilemap == null && tilemapRenderer != null)
+            tilemap = tilemapRenderer.GetComponent<Tilemap>();
+
+        // Clone SpriteRenderer's material
+        if (spriteRenderer != null)
+        {
+            Material original = spriteRenderer.sharedMaterial;
+            if (original != null)
+                spriteRenderer.material = new Material(original);
+            else
+                spriteRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        }
+
+        // Clone TilemapRenderer's material
+        if (tilemapRenderer != null)
+        {
+            Material original = tilemapRenderer.sharedMaterial;
+            Material baseMaterial = tilemapRenderer.sharedMaterial != null
+       ? tilemapRenderer.sharedMaterial
+       : new Material(Shader.Find("Sprites/Default"));
+
+            tilemapRenderer.material = new Material(baseMaterial);
+
+        }
+
+        if (spriteRenderer == null && tilemap == null)
+            Debug.LogWarning("BuildingStats requires a SpriteRenderer or Tilemap for visual tinting.");
     }
 
     public void SetBuildState(BuildState state)
     {
-
-
         currentBuildState = state;
+
+        // Apply tint depending on render type
+        Color tint = Color.white;
 
         switch (state)
         {
-
-            
-
             case BuildState.planned:
-                if (spriteRenderer != null)
-                {
-                    Debug.Log("planned");
-                    spriteRenderer.color = new Color(1f, 1f, 1f, 0.4f); // semi-transparent
-                }
+                tint = new Color(0f, 1f, 0f, 0.5f); // semi-transparent green instead of white
                 break;
             case BuildState.placed:
-                if (spriteRenderer != null)
-                    spriteRenderer.color = Color.green;  // green for placed but not built
+                tint = new Color(0f, 1f, 0f, 0.5f); // keep placed green tint same or different if you want
                 break;
             case BuildState.Built:
-                if (spriteRenderer != null)
-                    spriteRenderer.color = Color.white;
+                tint = Color.white;
                 break;
             case BuildState.Destroyed:
-                // add destroy logic here
+                tint = Color.red;
                 break;
         }
-    }
 
+
+        // Apply tint to sprite or tilemap
+        if (spriteRenderer != null)
+            spriteRenderer.color = tint;
+
+        if (tilemap != null)
+            tilemap.color = tint;
+
+        Debug.Log($"Build state set to {state}. Tint applied.");
+    }
 
     public void RemoveWorker(GameObject unit)
     {
@@ -59,19 +95,14 @@ public class BuildingStats : MonoBehaviour
         {
             currentlyWorkingHere.Remove(unit);
 
-            // Unparent the troll from this building
             if (unit.transform.parent == transform)
                 unit.transform.SetParent(null);
 
-            // Clear troll's working assignment
             trollbrain troll = unit.GetComponent<trollbrain>();
             if (troll != null && troll.isWorkingAt == gameObject)
-            {
                 troll.ClearWorkingAt();
-            }
 
-            Debug.Log($"{unit.name} was removed from {gameObject.name} and unparented.");
+            Debug.Log($"{unit.name} removed from {gameObject.name} and unparented.");
         }
     }
-
 }

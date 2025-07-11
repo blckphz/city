@@ -15,6 +15,6 @@ MonoBehaviour:
   buildingName: 
   capacity: 0
   icon: {fileID: 0}
-  buildTime: 3
+  buildTime: 1
   grainStorageCapacity: 0
   grainProcessingRate: 0
